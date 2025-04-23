@@ -3,19 +3,34 @@ import math
 import torch
 from losses import SparsityLoss  # your SparsityLoss must now use dim=0 internally
 from torch import nn
+from deeptype_model import DeeptypeModel
 
-class DummyModel(nn.Module):
+class DummyModel(DeeptypeModel):
     def __init__(self, weight_tensor: torch.Tensor):
         """
         weight_tensor: shape (hidden_dim, input_dim)
         """
         super().__init__()
         hidden_dim, input_dim = weight_tensor.shape
+        # define a single linear layer with no bias
         self.input_layer = nn.Linear(input_dim, hidden_dim, bias=False)
         # overwrite default weight
         with torch.no_grad():
             self.input_layer.weight.copy_(weight_tensor)
+        # ensure gradient flows
         self.input_layer.weight.requires_grad_(True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # for our sparsity test, forward can just be the same as get_hidden_representations
+        return self.input_layer(x)
+
+    def get_input_layer_weights(self) -> torch.Tensor:
+        # return the weight matrix of the first layer
+        return self.input_layer.weight
+
+    def get_hidden_representations(self, x: torch.Tensor) -> torch.Tensor:
+        # here the “hidden” is just the single linear transform
+        return self.input_layer(x)
 
 class TestSparsityLoss(unittest.TestCase):
 
