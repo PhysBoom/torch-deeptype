@@ -1,7 +1,7 @@
 from typing import Sequence
 from torch import Tensor, nn
 import torch
-from deeptype_model import DeeptypeModel
+from .deeptype_model import DeeptypeModel
 
 class SparsityLoss(nn.Module):
     def __init__(self):

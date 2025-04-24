@@ -1,9 +1,9 @@
 import unittest
 import math
 import torch
-from losses import SparsityLoss  # your SparsityLoss must now use dim=0 internally
+from torch_deeptype.losses import SparsityLoss  # your SparsityLoss must now use dim=0 internally
 from torch import nn
-from deeptype_model import DeeptypeModel
+from torch_deeptype.deeptype_model import DeeptypeModel
 
 class DummyModel(DeeptypeModel):
     def __init__(self, weight_tensor: torch.Tensor):

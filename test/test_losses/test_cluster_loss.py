@@ -3,8 +3,8 @@ import math
 import torch
 import numpy as np
 from torch import nn
-from deeptype_model import DeeptypeModel
-from losses import ClusterRepresentationLoss
+from torch_deeptype.deeptype_model import DeeptypeModel
+from torch_deeptype.losses import ClusterRepresentationLoss
 from sklearn.cluster import KMeans
 
 class DummyIdentityModel(DeeptypeModel):
