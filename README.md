@@ -133,3 +133,7 @@ print("Top 5 features by importance:", sorted_idx[:5].tolist())
 That’s all you need to get DeepType running end-to-end!
 
 If you're a more advanced user, you can also use the `SparsityLoss` and `ClusterRepresentationLoss` directly.
+
+## Acknowledgements
+
+This implementation is based on Runpu Chen's original implementation [here](https://github.com/runpuchen/DeepType.git). The original paper that introduced DeepType can be found [here](https://pubmed.ncbi.nlm.nih.gov/31603461/).
