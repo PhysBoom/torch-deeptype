@@ -63,6 +63,7 @@ train_loader = DataLoader(dataset, batch_size=64, shuffle=True)
 ```
 
 3. Instantiate the trainer
+
 Use DeeptypeTrainer to set up both phases of DeepType training:
 
 ```python
@@ -80,6 +81,7 @@ trainer = DeeptypeTrainer(
 ```
 
 4. Run training
+
 Call trainer.train(...) to execute the Deeptype training
 
 ```python
