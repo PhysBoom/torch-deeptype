@@ -11,7 +11,8 @@ Run `pip install torch-deeptype`
 Usage
 After installing (pip install torch-deeptype), follow these steps:
 
-1. Define your model
+**1. Define your model**
+
 Create a DeeptypeModel subclass that implements:
 
 `forward(self, x: Tensor) -> Tensor`
@@ -48,7 +49,8 @@ class MyNet(DeeptypeModel):
         return x
 ```
 
-2. Prepare your data
+**2. Prepare your data**
+
 Wrap your tensors in a TensorDataset and DataLoader as usual:
 
 ```python
@@ -62,7 +64,7 @@ dataset      = TensorDataset(X, y)
 train_loader = DataLoader(dataset, batch_size=64, shuffle=True)
 ```
 
-3. Instantiate the trainer
+**3. Instantiate the trainer**
 
 Use DeeptypeTrainer to set up both phases of DeepType training:
 
@@ -80,7 +82,7 @@ trainer = DeeptypeTrainer(
 )
 ```
 
-4. Run training
+**4. Run training**
 
 Call trainer.train(...) to execute the Deeptype training
 
@@ -99,7 +101,7 @@ With `verbose=True`, you’ll see three loss components logged each epoch:
 - Sparsity (input-weight L₂ penalty)
 - Cluster (hidden-representation vs. KMeans centers)
 
-5. Extract clusters and important inputs
+**5. Extract clusters and important inputs**
 
 After training, you can inspect:
 - KMeans clusters over your dataset’s hidden representations
