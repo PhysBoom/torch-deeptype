@@ -141,3 +141,5 @@ If you're a more advanced user, you can also use the `SparsityLoss` and `Cluster
 ## Acknowledgements
 
 This implementation is based on Runpu Chen's original implementation [here](https://github.com/runpuchen/DeepType.git). The original paper that introduced DeepType can be found [here](https://pubmed.ncbi.nlm.nih.gov/31603461/).
+
+Check my article on the paper [here](https://contributor.insightmediagroup.io/want-better-clusters-try-deeptype/)
