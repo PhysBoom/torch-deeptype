@@ -19,6 +19,8 @@ class DeeptypeTrainer:
         sparsity_weight: float = 0.006,
         cluster_weight: float = 1.2,
         verbose: bool = False,
+        callback_supervised: Optional[Callable[[int, float, float, DeeptypeModel], None]] = None,
+        callback_supervised_unsupervised: Optional[Callable[[int, float, float, float, DeeptypeModel], None]] = None
     ):
         """
         Args:
@@ -42,6 +44,8 @@ class DeeptypeTrainer:
         # instantiate the two regularizers once
         self._sparsity_loss = SparsityLoss()
         self._cluster_loss  = ClusterRepresentationLoss()
+        self.callback_supervised = callback_supervised
+        self.callback_supervised_unsupervised = callback_supervised_unsupervised
 
     def _train_supervised(self, num_epochs: int, lr: float) -> None:
         """
@@ -68,14 +72,18 @@ class DeeptypeTrainer:
                 total_primary  += loss_p.item()  * inputs.size(0)
                 total_sparsity += loss_s.item() * inputs.size(0)
 
+            avg_p = total_primary  / n_samples
+            avg_s = total_sparsity / n_samples
+            
             if self.verbose:
-                avg_p = total_primary  / n_samples
-                avg_s = total_sparsity / n_samples
                 print(
                     f"[Epoch {epoch}/{num_epochs}]  "
                     f"Primary: {avg_p:0.4f}  "
                     f"Sparsity: {avg_s:0.4f}"
                 )
+                
+            if self.callback_supervised:
+                self.callback_supervised(epoch, avg_p, avg_s, self.model)
 
         if self.verbose:
             print("→ Phase 1 training complete.\n")
@@ -148,17 +156,21 @@ class DeeptypeTrainer:
                     total_sparsity   += ls.item() * inputs.size(0)
                     total_clustering += lc.item() * inputs.size(0)
 
+            denom = n_samples * train_steps_per_batch
+            avg_p = total_primary    / denom
+            avg_s = total_sparsity   / denom
+            avg_c = total_clustering / denom
+
             if self.verbose:
-                denom = n_samples * train_steps_per_batch
-                avg_p = total_primary    / denom
-                avg_s = total_sparsity   / denom
-                avg_c = total_clustering / denom
                 print(
                     f"[Phase 2 | Epoch {epoch}/{num_epochs}]  "
                     f"Primary: {avg_p:0.4f}  "
                     f"Sparsity: {avg_s:0.4f}  "
                     f"Cluster: {avg_c:0.4f}"
                 )
+                
+            if self.callback_supervised_unsupervised:
+                self.callback_supervised_unsupervised(epoch, avg_p, avg_s, avg_c, self.model)
 
         if self.verbose:
             print("→ Phase 2 training complete.\n")
