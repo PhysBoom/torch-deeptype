@@ -19,8 +19,8 @@ class DeeptypeTrainer:
         sparsity_weight: float = 0.006,
         cluster_weight: float = 1.2,
         verbose: bool = False,
-        callback_supervised: Optional[Callable[[int, float, float, DeeptypeModel], None]] = None,
-        callback_supervised_unsupervised: Optional[Callable[[int, float, float, float, DeeptypeModel], None]] = None
+        callback_supervised: Optional[Callable[[int, DeeptypeModel, float, float], None]] = None,
+        callback_supervised_unsupervised: Optional[Callable[[int, DeeptypeModel, float, float, float], None]] = None
     ):
         """
         Args:
@@ -46,8 +46,9 @@ class DeeptypeTrainer:
         self._cluster_loss  = ClusterRepresentationLoss()
         self.callback_supervised = callback_supervised
         self.callback_supervised_unsupervised = callback_supervised_unsupervised
+        self._should_stop = False
 
-    def _train_supervised(self, num_epochs: int, lr: float) -> None:
+    def train_supervised(self, num_epochs: int, lr: float) -> None:
         """
         Phase 1: train on primary loss + α * sparsity.
         """
@@ -55,6 +56,9 @@ class DeeptypeTrainer:
         n_samples = len(self.train_loader.dataset)
 
         for epoch in range(1, num_epochs + 1):
+            if self._should_stop:
+                print("Ending phase 1 (training stopped)")
+                return
             total_primary  = 0.0
             total_sparsity = 0.0
 
@@ -83,7 +87,7 @@ class DeeptypeTrainer:
                 )
                 
             if self.callback_supervised:
-                self.callback_supervised(epoch, avg_p, avg_s, self.model)
+                self.callback_supervised(epoch, self.model, avg_p, avg_s)
 
         if self.verbose:
             print("→ Phase 1 training complete.\n")
@@ -119,7 +123,7 @@ class DeeptypeTrainer:
         ]
         return cluster_centers
             
-    def _train_supervised_unsupervised(
+    def train_supervised_unsupervised(
         self,
         num_epochs: int,
         lr: float,
@@ -133,6 +137,9 @@ class DeeptypeTrainer:
         n_samples = len(self.train_loader.dataset)
 
         for epoch in range(1, num_epochs + 1):
+            if self._should_stop:
+                print("Ending phase 2 (training stopped)")
+                return
             total_primary    = 0.0
             total_sparsity   = 0.0
             total_clustering = 0.0
@@ -170,7 +177,7 @@ class DeeptypeTrainer:
                 )
                 
             if self.callback_supervised_unsupervised:
-                self.callback_supervised_unsupervised(epoch, avg_p, avg_s, avg_c, self.model)
+                self.callback_supervised_unsupervised(epoch, self.model, avg_p, avg_s, avg_c)
 
         if self.verbose:
             print("→ Phase 2 training complete.\n")
@@ -209,17 +216,18 @@ class DeeptypeTrainer:
         Returns:
             None: the model is updated in-place.
         """
+        self._should_stop = False
         # 1) Pretrain (phase 1)
         lr1 = pretrain_lr if pretrain_lr is not None else main_lr
         if self.verbose:
             print(f"Starting Phase 1: {pretrain_epochs} epochs @ lr={lr1}")
-        self._train_supervised(num_epochs=pretrain_epochs, lr=lr1)
+        self.train_supervised(num_epochs=pretrain_epochs, lr=lr1)
 
         # 2) Joint supervised + unsupervised (phase 2)
         if self.verbose:
             print(f"Starting Phase 2: {main_epochs} epochs @ lr={main_lr} "
                   f"with {train_steps_per_batch} steps/batch")
-        self._train_supervised_unsupervised(
+        self.train_supervised_unsupervised(
             num_epochs=main_epochs,
             lr=main_lr,
             train_steps_per_batch=train_steps_per_batch
@@ -277,3 +285,18 @@ class DeeptypeTrainer:
                  .type(reps.dtype)
         )
         return cluster_centers, labels
+    
+    def stop(self):
+        """
+        Stop the trainer in the middle of training
+        
+        NOTE: clear_stop() must be called for training to continue (e.g. if stopping the supervised phase early and
+        then proceeding to the unsupervised phase.)
+        """
+        self._should_stop = True
+        
+    def clear_stop(self):
+        """
+        Clear the stop flag. Required to continue training after stop() is called.
+        """
+        self._should_stop = False
