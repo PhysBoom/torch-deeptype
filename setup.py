@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="torch-deeptype",
-    version="0.1.0",
+    version="0.1.2",
     description="PyTorch implementation of DeepType with clustering and sparsity",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -47,6 +47,25 @@ class DeeptypeTrainer:
         self.callback_supervised = callback_supervised
         self.callback_supervised_unsupervised = callback_supervised_unsupervised
         self._should_stop = False
+        
+    def compute_losses(
+        self,
+        inputs: torch.Tensor,
+        targets: torch.Tensor,
+        do_cluster: bool = False,
+        centers: Optional[Sequence[torch.Tensor]] = None
+    ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+        """
+        Returns (primary_loss, sparsity_loss, cluster_loss).
+        If do_cluster is False, cluster_loss is None.
+        """
+        outputs = self.model(inputs)
+        lp = self.primary_loss_fn(outputs, targets)
+        ls = self._sparsity_loss(self.model)
+        lc = None
+        if do_cluster and centers is not None:
+            lc = self._cluster_loss(self.model, inputs, centers)
+        return lp, ls, lc
 
     def train_supervised(self, num_epochs: int, lr: float) -> None:
         """
@@ -65,16 +84,14 @@ class DeeptypeTrainer:
             for inputs, targets in self.train_loader:
                 optimizer.zero_grad()
 
-                outputs = self.model(inputs)
-                loss_p = self.primary_loss_fn(outputs, targets)
-                loss_s = self._sparsity_loss(self.model)
-                loss   = loss_p + self.sparsity_weight * loss_s
+                lp, ls, _ = self.compute_losses(inputs, targets, do_cluster=False)
+                loss = lp + self.sparsity_weight * ls
 
                 loss.backward()
                 optimizer.step()
 
-                total_primary  += loss_p.item()  * inputs.size(0)
-                total_sparsity += loss_s.item() * inputs.size(0)
+                total_primary  += lp.item() * inputs.size(0)
+                total_sparsity += ls.item() * inputs.size(0)
 
             avg_p = total_primary  / n_samples
             avg_s = total_sparsity / n_samples
@@ -149,11 +166,11 @@ class DeeptypeTrainer:
 
                 for _ in range(train_steps_per_batch):
                     optimizer.zero_grad()
-                    outputs = self.model(inputs)
-
-                    lp = self.primary_loss_fn(outputs, targets)
-                    ls = self._sparsity_loss(self.model)
-                    lc = self._cluster_loss(self.model, inputs, centers)
+                    lp, ls, lc = self.compute_losses(
+                        inputs, targets,
+                        do_cluster=True,
+                        centers=centers
+                    )
                     loss = lp + self.sparsity_weight * ls + self.cluster_weight * lc
 
                     loss.backward()
